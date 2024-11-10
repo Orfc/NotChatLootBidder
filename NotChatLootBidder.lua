@@ -235,14 +235,23 @@ local function LoadBidFrame(item, masterLooter, minimumBid, mode)
   frame.mode = mode or "DKP"
   needFrames[bidFrameId] = frame
   
-  -- Initialize highest bid tracking
-  if not highestBids[item] then
-    highestBids[item] = frame.minimumBid
-  end
-  
-  -- Set initial bid amount
+  -- Show/hide bid input and button based on mode
   local bidBox = getglobal(frame:GetName() .. "Bid")
-  bidBox:SetText(frame.minimumBid)
+  local bidButton = getglobal(frame:GetName() .. "BidButton")
+  
+  if frame.mode == "DKP" then
+    bidBox:Show()
+    bidButton:Show()
+    -- Initialize highest bid tracking
+    if not highestBids[item] then
+      highestBids[item] = frame.minimumBid
+    end
+    -- Set initial bid amount
+    bidBox:SetText(frame.minimumBid)
+  else
+    bidBox:Hide()
+    bidButton:Hide()
+  end
 
   getglobal(frame:GetName() .. "ItemIconItemName"):SetText(item)
   getglobal(frame:GetName() .. "ItemIcon"):SetNormalTexture(itemTexture or "Interface\\Icons\\Inv_misc_questionmark")
