@@ -14,10 +14,10 @@ local maxFrames = 8
 local needFrames = {}
 local itemRegex = "|c.-|H.-|h|r"
 local useable = {
-  ["Priest"] = { "One-Handed Maces", "Staves", "Daggers", "Wands" },
+  ["Priest"] = { "One-Handed Maces", "Staves", "Daggers", "Wands", "Bows" },
   ["Mage"] = { "One-Handed Swords", "Staves", "Daggers", "Wands" },
   ["Warlock"] = { "One-Handed Swords", "Staves", "Daggers", "Wands" },
-  ["Rogue"] = { "Leather", "Daggers", "One-Handed Swords", "One-Handed Maces", "Fist Weapons", "Bows", "Crossbows", "Guns", "Thrown", "Arrow", "Bullet" },
+  ["Rogue"] = { "Leather", "Daggers", "One-Handed Swords", "One-Handed Maces", "One-Handed Axes", "Fist Weapons", "Bows", "Crossbows", "Guns", "Thrown", "Arrow", "Bullet" },
   ["Druid"] = { "Leather", "One-Handed Maces", "Two-Handed Maces", "Polearms", "Staves", "Daggers", "Fist Weapons", "Idols" },
   ["Hunter"] = { "Leather", "Mail",  "One-Handed Axes", "Two-Handed Axes", "One-Handed Swords", "Two-Handed Swords", "Polearms", "Staves", "Daggers", "Fist Weapons", "Bows", "Crossbows", "Guns", "Arrow", "Bullet" },
   ["Shaman"] = { "Leather", "Mail", "One-Handed Axes", "Two-Handed Axes", "One-Handed Maces", "Two-Handed Maces", "Staves", "Daggers", "Fist Weapons", "Shields", "Totems" },
@@ -35,6 +35,8 @@ local noHealing = { ["Hunter"]=true, ["Warrior"]=true, ["Rogue"]=true, ["Mage"]=
 local noDamageOrHealing = { ["Hunter"]=true, ["Warrior"]=true, ["Rogue"]=true }
 local noSpells = { ["Warrior"]=true, ["Rogue"]=true }
 local noMelee = { ["Mage"]=true, ["Warlock"]=true, ["Priest"]=true }
+
+local highestBids = {} -- Track highest bid per item
 
 local function IsTableEmpty(table)
   local next = next
@@ -114,24 +116,35 @@ end
 local function CreateBidFrame(bidFrameId)
   local bidFrameName = "BidFrame" .. bidFrameId
   local frame = CreateFrame("Frame", bidFrameName, NotChatLootBidder, "BidFrameTemplate")
-  for _, t in {"MS", "OS", "ROLL"} do
+  
+  -- Add handler for DKP bid button
+  getglobal(bidFrameName .. "BidButton"):SetScript("OnClick", function()
+    local f = this:GetParent()
+    local bidBox = getglobal(f:GetName() .. "Bid")
+    local amt = bidBox:GetText()
+    amt = tonumber(amt)
+    if amt == nil then return end
+    if amt < frame.minimumBid then return end
+    
+    -- Clear focus from bid input
+    bidBox:ClearFocus()
+    
+    ChatThrottleLib:SendChatMessage("ALERT", addonName, f.itemLink .. " bid " .. amt, "WHISPER", nil, f.masterLooter)
+  end)
+
+  -- Modify MS/OS/TMOG/STOCK handlers to not require bid amount
+  for _, t in {"MS", "OS", "TMOG", "STOCK"} do
     local tier = t
     getglobal(bidFrameName .. tier .."Button"):SetScript("OnClick", function()
       local f = this:GetParent()
-      local amt = getglobal(f:GetName() .. "Bid"):GetText()
-      if tier == "ROLL" or frame.mode ~= "DKP" then
-        amt = ""
-      else
-        amt = tonumber(amt)
-        if amt == nil then return end
-        if amt < frame.minimumBid then return end
-      end
-      local note = string.gsub(getglobal(f:GetName() .. "Note"):GetText(), "^%s*(.-)%s*$", "%1")
-      if string.len(note) > 0 then note = " " .. note end
-      ChatThrottleLib:SendChatMessage("ALERT", addonName, f.itemLink .. " " .. tier .. " " .. amt .. " " .. note, "WHISPER", nil, f.masterLooter)
-      frame:Hide()
+      -- Clear focus from bid input
+      local bidBox = getglobal(f:GetName() .. "Bid")
+      bidBox:ClearFocus()
+      
+      ChatThrottleLib:SendChatMessage("ALERT", addonName, f.itemLink .. " " .. string.lower(tier), "WHISPER", nil, f.masterLooter)
     end)
   end
+
   frame:SetScript("OnHide", function()
     needFrames[bidFrameId] = nil
     frame:ClearAllPoints()
@@ -197,8 +210,6 @@ local function LoadBidFrame(item, masterLooter, minimumBid, mode)
   local _, _ , itemKey = string.find(item, "(item:%d+:%d+:%d+:%d+)")
   local itemName, itemLinkInfo, itemRarity, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture = GetItemInfo(itemKey)
   if itemLinkInfo == nil then
-    -- This is a potentially unsafe operation and may cause disconnects according to API documentation
-    -- No disconnects noticed in testing on twow's client
     itemLinkInfo = itemKey
   end
   if NotChatLootBidder_Store.AutoIgnore and not UseableItem(itemLinkInfo, itemSubType, itemName) then
@@ -211,20 +222,22 @@ local function LoadBidFrame(item, masterLooter, minimumBid, mode)
   frame.itemLink = item
   frame.itemLinkInfo = itemLinkInfo
   frame.masterLooter = masterLooter
-  frame.minimumBid = minimumBid or 1
+  frame.minimumBid = minimumBid or 10  -- Set default here
   frame.mode = mode or "DKP"
   needFrames[bidFrameId] = frame
+  
+  -- Initialize highest bid tracking
+  if not highestBids[item] then
+    highestBids[item] = frame.minimumBid
+  end
+  
+  -- Set initial bid amount
+  local bidBox = getglobal(frame:GetName() .. "Bid")
+  bidBox:SetText(frame.minimumBid)
+
   getglobal(frame:GetName() .. "ItemIconItemName"):SetText(item)
   getglobal(frame:GetName() .. "ItemIcon"):SetNormalTexture(itemTexture or "Interface\\Icons\\Inv_misc_questionmark")
   getglobal(frame:GetName() .. "ItemIcon"):SetPushedTexture(itemTexture or "Interface\\Icons\\Inv_misc_questionmark")
-  getglobal(frame:GetName() .. "Note"):SetText("")
-  local bidBox = getglobal(frame:GetName() .. "Bid")
-  bidBox:SetText("")
-  if frame.mode == "DKP" then
-    bidBox:Show()
-  else
-    bidBox:Hide()
-  end
   ResetFrameStack()
   UIFrameFadeIn(frame, .5, 0, 1)
 end
@@ -335,6 +348,14 @@ function NotChatLootBidder.PARTY_MEMBERS_CHANGED()
   VersionUtil:PARTY_MEMBERS_CHANGED(addonName)
 end
 
+-- Add near the top with other debug functions
+local function DebugBid(message, itemLink, bidType, bidAmount)
+  if NotChatLootBidder_Store.Debug then
+    Message("Bid received: " .. message)
+    Message("Parsed: item=" .. (itemLink or "nil") .. " type=" .. (bidType or "nil") .. " amount=" .. (bidAmount or "nil"))
+  end
+end
+
 function NotChatLootBidder.CHAT_MSG_ADDON(addonTag, stringMessage, channel, sender)
   if VersionUtil:CHAT_MSG_ADDON(addonName, function(ver)
     Message("New version " .. ver .. " of " .. addonTitle .. " is available! Upgrade now at " .. addonNotes)
@@ -343,13 +364,22 @@ function NotChatLootBidder.CHAT_MSG_ADDON(addonTag, stringMessage, channel, send
   if addonTag == addonName then
     local incomingMessage = VersionUtil:ParseMessage(stringMessage)
     if incomingMessage["items"] then
-      local minimumBid = incomingMessage["minimumBid"] -- optional: defaults to 1
+      local minimumBid = incomingMessage["minimumBid"] or 10 -- Changed default from 1 to 10
       local mode = incomingMessage["mode"] -- defaults to "DKP"
       for _, i in GetItemLinks(string.gsub(incomingMessage["items"], "~~~", ",")) do
         LoadBidFrame(i, sender, minimumBid, mode)
       end
     elseif incomingMessage["endSession"] then
+      -- Clear highest bids when session ends
+      highestBids = {}
       ClearFrames(2, sender)
+    else
+      -- Fix the pattern to match the actual message format
+      local itemLink, bidType, bidAmount = string.match(stringMessage, "(|c.-|h|r) (%a+) (%d+)")
+      if itemLink and bidType == "bid" and bidAmount then
+        DebugBid(stringMessage, itemLink, bidType, bidAmount)
+        UpdateBidSuggestion(itemLink, bidAmount)
+      end
     end
   end
 end
@@ -374,3 +404,90 @@ function NotChatLootBidder.UI_SCALE_CHANGED()
   TogglePlacementFrame()
   ResetFrameStack()
 end
+
+-- Add function to update bid suggestions
+local function UpdateBidSuggestion(item, newBid)
+  if tonumber(newBid) > (highestBids[item] or 0) then
+    highestBids[item] = tonumber(newBid)
+    -- Update all visible frames for this item
+    for _, frame in pairs(needFrames) do
+      if frame.itemLink == item then
+        local bidBox = getglobal(frame:GetName() .. "Bid")
+        bidBox:SetText(highestBids[item] + 10)
+      end
+    end
+  end
+end
+
+-- Add near the top with other local variables
+local highestBids = {}
+
+-- Add this function to handle bid updates
+local function UpdateBidSuggestion(item, newBid)
+  if tonumber(newBid) > (highestBids[item] or 0) then
+    highestBids[item] = tonumber(newBid)
+    -- Update all visible frames for this item
+    for _, frame in pairs(needFrames) do
+      if frame.itemLink == item then
+        local bidBox = getglobal(frame:GetName() .. "Bid")
+        if bidBox:IsVisible() then  -- Only update if in DKP mode
+          bidBox:SetText(RoundUpToTen(highestBids[item] + 10))
+        end
+      end
+    end
+  end
+end
+
+-- Modify the CHAT_MSG_WHISPER handler to catch bid messages
+function NotChatLootBidder.CHAT_MSG_WHISPER()
+  if event == "CHAT_MSG_WHISPER" then
+    local message = arg1
+    local itemLink, bidType, bidAmount = string.match(message, "(|c.-|h|r) (%a+) (%d+)")
+    if itemLink and bidType == "bid" and bidAmount then
+      UpdateBidSuggestion(itemLink, bidAmount)
+    end
+  end
+end
+
+-- Also add CHAT_MSG_RAID, CHAT_MSG_RAID_LEADER, and CHAT_MSG_RAID_WARNING handlers
+function NotChatLootBidder.CHAT_MSG_RAID()
+  local message = arg1
+  -- Match the format: "player bid X DKP for [item]"
+  local bidder, bidAmount, itemLink = string.match(message, "(.+) bid (%d+) DKP for (|c.-|h|r)")
+  
+  if bidder and bidAmount and itemLink then
+    Debug("Caught bid: " .. bidder .. " bid " .. bidAmount .. " on " .. itemLink)
+    UpdateBidSuggestion(itemLink, bidAmount)
+  end
+end
+
+-- Add this helper function near the top with other local functions
+local function RoundUpToTen(number)
+  return math.ceil(number / 10) * 10
+end
+
+local function UpdateBidSuggestion(item, newBid)
+  newBid = tonumber(newBid)
+  if newBid and (not highestBids[item] or newBid > highestBids[item]) then
+    Debug("New highest bid for " .. item .. ": " .. newBid)
+    highestBids[item] = newBid
+    
+    -- Update all visible frames for this item
+    for _, frame in pairs(needFrames) do
+      if frame.itemLink == item then
+        local bidBox = getglobal(frame:GetName() .. "Bid")
+        if bidBox:IsVisible() then
+          local suggestedBid = RoundUpToTen(highestBids[item] + 10)
+          bidBox:SetText(suggestedBid)
+          Debug("Updated bid box to " .. suggestedBid)
+        end
+      end
+    end
+  end
+end
+
+-- Also handle raid leader and raid warning messages
+NotChatLootBidder.CHAT_MSG_RAID_LEADER = NotChatLootBidder.CHAT_MSG_RAID
+NotChatLootBidder.CHAT_MSG_RAID_WARNING = NotChatLootBidder.CHAT_MSG_RAID
+
+-- Register the new events in the XML
