@@ -38,6 +38,15 @@ local noMelee = { ["Mage"]=true, ["Warlock"]=true, ["Priest"]=true }
 
 local highestBids = {} -- Track highest bid per item
 
+-- Add this near the top with other local variables
+local strfind = string.find
+local strmatch = string.match or function(s, pattern)
+    local start, finish, matches = strfind(s, pattern)
+    if not start then return nil end
+    if matches then return matches end
+    return string.sub(s, start, finish)
+end
+
 local function IsTableEmpty(table)
   local next = next
   return next(table) == nil
@@ -419,9 +428,6 @@ local function UpdateBidSuggestion(item, newBid)
   end
 end
 
--- Add near the top with other local variables
-local highestBids = {}
-
 -- Add this function to handle bid updates
 local function UpdateBidSuggestion(item, newBid)
   if tonumber(newBid) > (highestBids[item] or 0) then
@@ -453,7 +459,7 @@ end
 function NotChatLootBidder.CHAT_MSG_RAID()
   local message = arg1
   -- Match the format: "player bid X DKP for [item]"
-  local bidder, bidAmount, itemLink = string.match(message, "(.+) bid (%d+) DKP for (|c.-|h|r)")
+  local bidder, bidAmount, itemLink = strmatch(message, "(.+) bid (%d+) DKP for (|c.-|h|r)")
   
   if bidder and bidAmount and itemLink then
     Debug("Caught bid: " .. bidder .. " bid " .. bidAmount .. " on " .. itemLink)
