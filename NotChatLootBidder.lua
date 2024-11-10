@@ -384,7 +384,7 @@ function NotChatLootBidder.CHAT_MSG_ADDON(addonTag, stringMessage, channel, send
       ClearFrames(2, sender)
     else
       -- Fix the pattern to match the actual message format
-      local itemLink, bidType, bidAmount = string.match(stringMessage, "(|c.-|h|r) (%a+) (%d+)")
+      local itemLink, bidType, bidAmount = strmatch(stringMessage, "(|c.-|h|r) (%a+) (%d+)")
       if itemLink and bidType == "bid" and bidAmount then
         DebugBid(stringMessage, itemLink, bidType, bidAmount)
         UpdateBidSuggestion(itemLink, bidAmount)
@@ -448,7 +448,7 @@ end
 function NotChatLootBidder.CHAT_MSG_WHISPER()
   if event == "CHAT_MSG_WHISPER" then
     local message = arg1
-    local itemLink, bidType, bidAmount = string.match(message, "(|c.-|h|r) (%a+) (%d+)")
+    local itemLink, bidType, bidAmount = strmatch(message, "(|c.-|h|r) (%a+) (%d+)")
     if itemLink and bidType == "bid" and bidAmount then
       UpdateBidSuggestion(itemLink, bidAmount)
     end
