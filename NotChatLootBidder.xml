@@ -393,10 +393,6 @@
     <OnLoad>
       this:RegisterEvent("ADDON_LOADED")
       this:RegisterEvent("CHAT_MSG_ADDON")
-      this:RegisterEvent("CHAT_MSG_WHISPER")
-      this:RegisterEvent("CHAT_MSG_RAID")
-      this:RegisterEvent("CHAT_MSG_RAID_LEADER")
-      this:RegisterEvent("CHAT_MSG_RAID_WARNING")
       this:RegisterEvent("PLAYER_ENTERING_WORLD")
       this:RegisterEvent("PLAYER_LEAVING_WORLD")
       this:RegisterEvent("PARTY_MEMBERS_CHANGED")

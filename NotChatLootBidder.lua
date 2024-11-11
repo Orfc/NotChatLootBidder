@@ -36,8 +36,6 @@ local noDamageOrHealing = { ["Hunter"]=true, ["Warrior"]=true, ["Rogue"]=true }
 local noSpells = { ["Warrior"]=true, ["Rogue"]=true }
 local noMelee = { ["Mage"]=true, ["Warlock"]=true, ["Priest"]=true }
 
-local highestBids = {} -- Track highest bid per item
-
 -- Add this near the top with other local variables
 local strfind = string.find
 local strmatch = string.match or function(s, pattern)
@@ -242,12 +240,6 @@ local function LoadBidFrame(item, masterLooter, minimumBid, mode)
   if frame.mode == "DKP" then
     bidBox:Show()
     bidButton:Show()
-    -- Initialize highest bid tracking
-    if not highestBids[item] then
-      highestBids[item] = frame.minimumBid
-    end
-    -- Set initial bid amount
-    bidBox:SetText(frame.minimumBid)
   else
     bidBox:Hide()
     bidButton:Hide()
@@ -389,14 +381,12 @@ function NotChatLootBidder.CHAT_MSG_ADDON(addonTag, stringMessage, channel, send
       end
     elseif incomingMessage["endSession"] then
       -- Clear highest bids when session ends
-      highestBids = {}
       ClearFrames(2, sender)
     else
       -- Fix the pattern to match the actual message format
       local itemLink, bidType, bidAmount = strmatch(stringMessage, "(|c.-|h|r) (%a+) (%d+)")
       if itemLink and bidType == "bid" and bidAmount then
         DebugBid(stringMessage, itemLink, bidType, bidAmount)
-        UpdateBidSuggestion(itemLink, bidAmount)
       end
     end
   end
@@ -422,87 +412,5 @@ function NotChatLootBidder.UI_SCALE_CHANGED()
   TogglePlacementFrame()
   ResetFrameStack()
 end
-
--- Add function to update bid suggestions
-local function UpdateBidSuggestion(item, newBid)
-  if tonumber(newBid) > (highestBids[item] or 0) then
-    highestBids[item] = tonumber(newBid)
-    -- Update all visible frames for this item
-    for _, frame in pairs(needFrames) do
-      if frame.itemLink == item then
-        local bidBox = getglobal(frame:GetName() .. "Bid")
-        bidBox:SetText(highestBids[item] + 10)
-      end
-    end
-  end
-end
-
--- Add this function to handle bid updates
-local function UpdateBidSuggestion(item, newBid)
-  if tonumber(newBid) > (highestBids[item] or 0) then
-    highestBids[item] = tonumber(newBid)
-    -- Update all visible frames for this item
-    for _, frame in pairs(needFrames) do
-      if frame.itemLink == item then
-        local bidBox = getglobal(frame:GetName() .. "Bid")
-        if bidBox:IsVisible() then  -- Only update if in DKP mode
-          bidBox:SetText(RoundUpToTen(highestBids[item] + 10))
-        end
-      end
-    end
-  end
-end
-
--- Modify the CHAT_MSG_WHISPER handler to catch bid messages
-function NotChatLootBidder.CHAT_MSG_WHISPER()
-  if event == "CHAT_MSG_WHISPER" then
-    local message = arg1
-    local itemLink, bidType, bidAmount = strmatch(message, "(|c.-|h|r) (%a+) (%d+)")
-    if itemLink and bidType == "bid" and bidAmount then
-      UpdateBidSuggestion(itemLink, bidAmount)
-    end
-  end
-end
-
--- Also add CHAT_MSG_RAID, CHAT_MSG_RAID_LEADER, and CHAT_MSG_RAID_WARNING handlers
-function NotChatLootBidder.CHAT_MSG_RAID()
-  local message = arg1
-  -- Match the format: "player bid X DKP for [item]"
-  local bidder, bidAmount, itemLink = strmatch(message, "(.+) bid (%d+) DKP for (|c.-|h|r)")
-  
-  if bidder and bidAmount and itemLink then
-    Debug("Caught bid: " .. bidder .. " bid " .. bidAmount .. " on " .. itemLink)
-    UpdateBidSuggestion(itemLink, bidAmount)
-  end
-end
-
--- Add this helper function near the top with other local functions
-local function RoundUpToTen(number)
-  return math.ceil(number / 10) * 10
-end
-
-local function UpdateBidSuggestion(item, newBid)
-  newBid = tonumber(newBid)
-  if newBid and (not highestBids[item] or newBid > highestBids[item]) then
-    Debug("New highest bid for " .. item .. ": " .. newBid)
-    highestBids[item] = newBid
-    
-    -- Update all visible frames for this item
-    for _, frame in pairs(needFrames) do
-      if frame.itemLink == item then
-        local bidBox = getglobal(frame:GetName() .. "Bid")
-        if bidBox:IsVisible() then
-          local suggestedBid = RoundUpToTen(highestBids[item] + 10)
-          bidBox:SetText(suggestedBid)
-          Debug("Updated bid box to " .. suggestedBid)
-        end
-      end
-    end
-  end
-end
-
--- Also handle raid leader and raid warning messages
-NotChatLootBidder.CHAT_MSG_RAID_LEADER = NotChatLootBidder.CHAT_MSG_RAID
-NotChatLootBidder.CHAT_MSG_RAID_WARNING = NotChatLootBidder.CHAT_MSG_RAID
 
 -- Register the new events in the XML
