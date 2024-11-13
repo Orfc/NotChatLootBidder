@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cff466d1dNot Chat Loot Bidder|r
 ## Version: 1.5.0
-## Notes: https://github.com/trumpetx/NotChatLootBidder
-## Author: |c013220ffTrumpetX|r
+## Notes: https://github.com/Orfc/NotChatLootBidder
+## Author: |c013220ffTrumpetX|r, extended by |cffffffffOrfc|r
 ## SavedVariables: NotChatLootBidder_Store
 
 ChatThrottleLib.lua
