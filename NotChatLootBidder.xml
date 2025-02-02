@@ -248,7 +248,6 @@
       <OnLoad>
         this:RegisterForDrag("LeftButton")
         this.itemLinkInfo = "item:35::::::::60:::::"
-        getglobal("NotChatLootBidder_FramePlacementNote"):SetText("'/bid' to show/hide this frame")
       </OnLoad>
       <OnHide>
         this:StopMovingOrSizing()
