@@ -116,22 +116,20 @@ end
 local function CreateBidFrame(bidFrameId)
   local bidFrameName = "BidFrame" .. bidFrameId
   local frame = CreateFrame("Frame", bidFrameName, NotChatLootBidder, "BidFrameTemplate")
-  for _, t in {"MS", "OS", "ROLL"} do
+  for _, t in {"MS", "OS"} do
     local tier = t
     getglobal(bidFrameName .. tier .."Button"):SetScript("OnClick", function()
       local f = this:GetParent()
       local amt = getglobal(f:GetName() .. "Bid"):GetText()
-      if tier == "ROLL" or frame.mode ~= "DKP" then
+      if frame.mode ~= "DKP" then
         amt = ""
       else
         amt = tonumber(amt)
-        if amt == nil then return end
+        if amt == nil then amt = 0 end
         if amt < frame.minimumBid then return end
       end
-      local note = string.gsub(getglobal(f:GetName() .. "Note"):GetText(), "^%s*(.-)%s*$", "%1")
-      if string.len(note) > 0 then note = " " .. note end
-      ChatThrottleLib:SendChatMessage("ALERT", addonName, f.itemLink .. " " .. tier .. " " .. amt .. " " .. note, "WHISPER", nil, f.masterLooter)
-      frame:Hide()
+      ChatThrottleLib:SendChatMessage("ALERT", addonName, f.itemLink .. " " .. tier .. " " .. amt, "WHISPER", nil, f.masterLooter)
+      getglobal(f:GetName() .. "Bid"):ClearFocus()
     end)
   end
   frame:SetScript("OnHide", function()
@@ -213,13 +211,12 @@ local function LoadBidFrame(item, masterLooter, minimumBid, mode)
   frame.itemLink = item
   frame.itemLinkInfo = itemLinkInfo
   frame.masterLooter = masterLooter
-  frame.minimumBid = minimumBid or 1
+  frame.minimumBid = minimumBid or 0
   frame.mode = mode or "DKP"
   needFrames[bidFrameId] = frame
   getglobal(frame:GetName() .. "ItemIconItemName"):SetText(item)
   getglobal(frame:GetName() .. "ItemIcon"):SetNormalTexture(itemTexture or "Interface\\Icons\\Inv_misc_questionmark")
   getglobal(frame:GetName() .. "ItemIcon"):SetPushedTexture(itemTexture or "Interface\\Icons\\Inv_misc_questionmark")
-  getglobal(frame:GetName() .. "Note"):SetText(NotChatLootBidder_Store.Messages[me] or "")
   local bidBox = getglobal(frame:GetName() .. "Bid")
   bidBox:SetText("")
   if frame.mode == "DKP" then

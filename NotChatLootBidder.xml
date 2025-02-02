@@ -52,31 +52,6 @@
 					</Anchor>
 				</Anchors>>
 			</EditBox>
-			<EditBox name="$parentNote" inherits="InputBoxTemplate" letters="120" autofocus="false" text="'/bid' to show/hide this frame">
-				<Layers>
-					<Layer level="BACKGROUND">
-						<FontString inherits="GameFontNormalSmall" text="Note:" justifyH="RIGHT">
-							<Anchors>
-								<Anchor point="RIGHT" relativePoint="LEFT">
-									<Offset>
-										<AbsDimension x="-10" y="0" />
-									</Offset>
-								</Anchor>
-							</Anchors>
-						</FontString>
-					</Layer>
-				</Layers>
-				<Size>
-					<AbsDimension x="180" y="32" />
-				</Size>
-				<Anchors>
-					<Anchor point="TOPLEFT" relativeTo="$parent" relativePoint="TOPLEFT">
-						<Offset>
-							<AbsDimension x="50" y="-80"/>
-						</Offset>
-					</Anchor>
-				</Anchors>>
-			</EditBox>
       <Button name="$parentItemIcon" inherits="UIPanelButtonTemplate" text="">
         <NormalTexture name="$parentNormalTexture" file="Interface\Icons\inv_staff_08">
           <Size>
@@ -242,56 +217,6 @@
         <Layers>
           <Layer level="OVERLAY">
             <FontString name="$parentName" inherits="GameFontNormal" text="OS" hidden="false">
-              <Anchors>
-                <Anchor point="BOTTOM">
-                  <Offset>
-                    <AbsDimension x="0" y="-18"/>
-                  </Offset>
-                </Anchor>
-              </Anchors>
-            </FontString>
-          </Layer>
-        </Layers>
-      </Button>
-      <Button name="$parentROLLButton" hidden="false" inherits="UIPanelButtonTemplate" text="">
-        <NormalTexture file="Interface\Buttons\UI-GroupLoot-Dice-Highlight">
-          <Size x="36" y="36"/>
-          <Anchors>
-            <Anchor point="TOPLEFT">
-              <Offset x="0" y="0"/>
-            </Anchor>
-          </Anchors>
-        </NormalTexture>
-        <PushedTexture file="Interface\Buttons\UI-GroupLoot-Dice-Up">
-          <Size x="36" y="36"/>
-          <Anchors>
-            <Anchor point="TOPLEFT">
-              <Offset x="0" y="0"/>
-            </Anchor>
-          </Anchors>
-        </PushedTexture>
-        <HighlightTexture file="Interface\Buttons\UI-GroupLoot-Dice-Up">
-          <Size x="36" y="36"/>
-          <Anchors>
-            <Anchor point="TOPLEFT">
-              <Offset x="0" y="0"/>
-            </Anchor>
-          </Anchors>
-        </HighlightTexture>
-        <DisabledTexture inherits=""/>
-        <Size>
-          <AbsDimension x="36" y="36"/>
-        </Size>
-        <Anchors>
-          <Anchor point="TOPLEFT">
-            <Offset>
-              <AbsDimension x="342" y="-40"/>
-            </Offset>
-          </Anchor>
-        </Anchors>
-        <Layers>
-          <Layer level="OVERLAY">
-            <FontString name="$parentName" inherits="GameFontNormal" text="Roll" hidden="false">
               <Anchors>
                 <Anchor point="BOTTOM">
                   <Offset>
